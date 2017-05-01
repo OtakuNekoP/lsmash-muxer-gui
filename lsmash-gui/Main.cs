@@ -21,6 +21,34 @@ namespace lsmash_gui
         public Main()
         {
             InitializeComponent();
+            this.OutputLineGet += new OnOutputLineGetDelegate(Main_OutputLineGet);
+        }
+
+        public delegate void OnOutputLineGetDelegate(string line);
+
+        public event OnOutputLineGetDelegate OutputLineGet;
+
+        private void Main_OutputLineGet(string line)
+        {
+            if (this.InvokeRequired)
+            {
+                this.Invoke(new OnOutputLineGetDelegate(Main_OutputLineGet), line);
+            }
+            else
+            {
+                logout.AppendText(line);
+                logout.AppendText("\r\n");
+            }
+        }
+
+        public void StartThread()
+        {
+            new System.Threading.Thread(new System.Threading.ThreadStart(this.StartConsoleProgram)).Start();
+        }
+
+        private void StartConsoleProgram()
+        {
+            throw new NotImplementedException();
         }
 
         private void About_Click(object sender, EventArgs e)
@@ -528,16 +556,35 @@ namespace lsmash_gui
                         RedirectStandardInput = true,
                         RedirectStandardOutput = true,
                         RedirectStandardError = true,
-                        CreateNoWindow = true,
+                        //CreateNoWindow = true,
                     }
                 };
-                p.OutputDataReceived += sortProcess_OutputDataReceived;
-                p.ErrorDataReceived += sortProcess_OutputDataReceived;
-                p.Start();
-                p.BeginErrorReadLine();
-                p.BeginOutputReadLine();
-                p.WaitForExit();
-                p.Close();
+                //p.OutputDataReceived += sortProcess_OutputDataReceived;
+                //p.ErrorDataReceived += sortProcess_OutputDataReceived;
+                //p.Start();
+
+                if (p.Start())
+                {
+                    while (!p.HasExited)
+                    {
+                        string line = p.StandardOutput.ReadLine();
+                        //MessageBox.Show(String.Format(line), this.Text,
+                        //MessageBoxButtons.OK, MessageBoxIcon.Information);
+                        if (line != null)
+                            OutputLineGet(line);
+                    }
+                    p.WaitForExit();
+                }
+
+                //p.BeginErrorReadLine();
+                //p.BeginOutputReadLine();
+                if (p != null)
+                {
+                    //proc.WaitForExit();
+                    p.Close();
+                }
+                //p.WaitForExit();
+                //p.Close();
             }
 
             catch (Exception ex)
@@ -545,18 +592,19 @@ namespace lsmash_gui
                 MessageBox.Show("执行命令失败，请检查输入的命令是否正确！");
             }
         }
-        private void sortProcess_OutputDataReceived(object sender, DataReceivedEventArgs e)
-        {
-            StringBuilder outputBuilder;
-            outputBuilder = new StringBuilder();
-            if (!String.IsNullOrEmpty(e.Data))
-            {
+
+        //private void sortProcess_OutputDataReceived(object sender, DataReceivedEventArgs e)
+        //{
+         //   StringBuilder outputBuilder;
+         //   outputBuilder = new StringBuilder();
+         //   if (!String.IsNullOrEmpty(e.Data))
+         //   {
                 //this.BeginInvoke(new Action(() => { this.logs.Text= e.Data; }));
                 //logs.Text = e.Data;
                 //outputBuilder.Append(e.Data);
                 //logs.Text += "\r" + outputBuilder.ToString();
-            }
-        }
+        //    }
+        //}
 
         private void Clear_All_Click(object sender, EventArgs e)
         {
